@@ -24,9 +24,16 @@ async def first_ques(message : Message, state : FSMContext):
         # await state.update_data(correct = data['correct'] + 1)
         async with state.proxy() as data:
             data['correct'] += 1
-    await message.answer("Второй вопрос: .......?")
+    await message.answer("Второй вопрос: Ок или не ок?")
     await QuizAnswers.dont_know.set()
 
+@dp.message_handler(state=QuizAnswers.dont_know)
+async def second_ques(message : Message, state : FSMContext):
+    if message.text == 'ок':
+        async with state.proxy() as data:
+            data['correct'] += 1
+            await message.answer(f"Tест окончен! Правильных ответов {data['correct']}/2")
+    await state.finish()
 
 @dp.message_handler(commands=["startquiz"])
 async def start_quiz(message : Message, state : FSMContext):
@@ -40,8 +47,6 @@ async def start_quiz(message : Message, state : FSMContext):
                          reply_markup=buttons)
     await state.update_data(correct = 0)
     await QuizAnswers.none_answer.set()
-
-
 
 
 executor.start_polling(dp)
