@@ -31,6 +31,10 @@ async def take_value(message : Message, state : FSMContext):
     response = requests.get("https://www.cbr-xml-daily.ru/daily_json.js").json()
     if data['action'] == "В рубли":
         await message.answer(text=value * response['Valute'][data['valute']]['Value']/response['Valute'][data['valute']]['Nominal'])
+    elif data['action'] == "из рублей":
+        await message.answer(value / (response['Valute'][data['valute']]['Value'] / response['Valute'][data['valute']]['Nominal']))
+    await state.reset_state(with_data=False)
+
 
 @dp.callback_query_handler()
 async def change_currency_handler(callback : CallbackQuery, state : FSMContext):
@@ -39,6 +43,11 @@ async def change_currency_handler(callback : CallbackQuery, state : FSMContext):
         await state.update_data(valute=data[1])
         await state.update_data(action="В рубли")
         await bot.send_message(chat_id=callback.message.chat.id, text=f"Введи сколько {data[1]} перевести")
+        await Currency.value.set()
+    elif data[0] == "из рублей":
+        await state.update_data(valute=data[1])
+        await state.update_data(action="из рублей")
+        await bot.send_message(chat_id=callback.message.chat.id, text=f"Введи сколько рублей перевести в {data[1]}")
         await Currency.value.set()
 
 
@@ -51,6 +60,11 @@ async def message_handler(message : Message):
         buttons = InlineKeyboardMarkup(row_width=7)
         for i in all_valute:
             buttons.insert(InlineKeyboardButton(text = i, callback_data=f"В рубли|{i}"))
+        await message.answer(text="Выберите валюту", reply_markup=buttons)
+    elif "из рублей" in message.text.lower():
+        buttons = InlineKeyboardMarkup(row_width=7)
+        for i in all_valute:
+            buttons.insert(InlineKeyboardButton(text=i, callback_data=f"из рублей|{i}"))
         await message.answer(text="Выберите валюту", reply_markup=buttons)
 
 
